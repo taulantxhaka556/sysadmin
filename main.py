@@ -59,7 +59,7 @@ def health():
 @app.get('/')
 def home(r:Request):return go('/dashboard' if r.session.get('uid') else '/login')
 @app.get('/login')
-def login_page(r:Request):return page(r,'Вход','<form method="post">'+token(r)+'<label>Email<input type="email" name="email" required></label><label>Пароль<input type="password" name="password" required></label><button>Войти</button></form>')
+def login_page(r:Request):return page(r,'Вход','<section><h2>Сеть начинается с простого запроса</h2><p>Попробуйте интерактивный модуль: схемы, короткие задания и конструктор сети.</p><a class="button" href="/learn/1/demo">Попробовать без регистрации →</a></section><form method="post">'+token(r)+'<label>Email<input type="email" name="email" required></label><label>Пароль<input type="password" name="password" required></label><button>Войти</button></form>')
 @app.post('/login')
 def login(r:Request,email:str=Form(...),password:str=Form(...),t:str=Form('',alias='token')):
  csrf(r,t)
@@ -92,6 +92,7 @@ def dashboard(r:Request):
   works={w.lesson_id:w for w in d.scalars(select(Work).where(Work.user_id==u.id))}
   count=sum(w.status=='graded' for w in works.values())
   body=f'<p class="eyebrow">КУРС / КОМПЬЮТЕРНЫЕ СЕТИ</p><p>Здравствуйте, {h(u.name)}. Изучайте конспекты, выполняйте задания и отправляйте ответы преподавателю.</p><div class="summary"><b>{count} / {len(ls)}</b><span>работ проверено</span><progress max="{len(ls)}" value="{count}"></progress></div><p><a class="button" href="/journal">Мои оценки</a> <a href="/trainer">Практика IPv4</a> · <a href="/exam">Пробный экзамен</a></p>'
+  body+='<section><p class="eyebrow">НОВЫЙ ФОРМАТ · МОДУЛЬ 01</p><h2>Как устроена сеть</h2><p>Шесть коротких уроков, интерактивные схемы, 18 проверок, конструктор и итоговый тест. Результат сохраняется в вашем аккаунте.</p><a class="button" href="/learn/1">Продолжить интерактивный курс →</a></section>'
   for n,title in STAGES.items():
    stage_lessons=[l for l in ls if stage_of(l)==n]
    done=sum(l.id in works and works[l.id].status=='graded' for l in stage_lessons)
@@ -204,6 +205,7 @@ def report(r:Request):
 
 import upgrade  # noqa: E402 - register extended routes
 import journal
+import learning
 
 def initialize_database():
  # Explicit bootstrap, not a write on every serverless cold start.
@@ -225,3 +227,4 @@ def initialize_database():
    d.commit()
 
 if not ON_VERCEL and os.getenv('AUTO_INIT_DB','1')=='1':initialize_database()
+

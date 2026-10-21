@@ -108,6 +108,8 @@ def student_journal(r, d, student, teacher):
     grades = {g.stage:g for g in d.scalars(select(StageGrade).where(StageGrade.user_id==student.id))}
     lessons = d.scalars(select(Lesson).order_by(Lesson.kind.desc(),Lesson.number)).all()
     body = '<p>'+h(student.name)+' · Итоговые оценки выставляет преподаватель.</p>'
+    from learning import teacher_summary
+    body += teacher_summary(d, student.id)
     for n,title in STAGES.items():
         ls = [l for l in lessons if stage_of(l)==n]
         graded = [works[l.id].score for l in ls if l.id in works and works[l.id].score is not None]
@@ -186,3 +188,4 @@ def exam_start(r:Request):
         for ex in exams:
             body+=f'<a class="item" href="/exam/{ex.id}">Экзамен №{ex.id} · {h(ex.created[:10])}<span>{str(ex.score)+"/100" if ex.score is not None else "Без оценки"}</span></a>'
         return page(r,'Пробный экзамен',body+'</div>')
+
