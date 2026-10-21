@@ -122,3 +122,20 @@ def test_all_lessons_have_materials():
     with DB() as d:
         for lesson in d.scalars(select(Lesson)):
             assert len(material(lesson))>600
+
+
+def test_upload_validation(monkeypatch):
+    import asyncio
+    from io import BytesIO
+    from fastapi import HTTPException
+    from starlette.datastructures import UploadFile
+    import pytest
+    import storage
+    for filename, data, expected in [('bad.exe',b'x',400),('empty.pkt',b'',400),('large.pkt',b'x'*(storage.MAX_FILE_BYTES+1),413)]:
+        with pytest.raises(HTTPException) as exc:
+            asyncio.run(storage.save_file(UploadFile(filename=filename,file=BytesIO(data))))
+        assert exc.value.status_code==expected
+    monkeypatch.setenv('VERCEL','1')
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(storage.save_file(UploadFile(filename='lab.pkt',file=BytesIO(b'x'))))
+    assert exc.value.status_code==503

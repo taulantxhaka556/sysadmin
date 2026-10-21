@@ -174,7 +174,7 @@ def review_page(r:Request,id:int):
   if not w:raise HTTPException(404)
   l=d.get(Lesson,w.lesson_id);u=d.get(User,w.user_id);body=f'<p>{h(u.name)} — {h(l.title)}</p><section class="pre">{h(w.answer)}</section>'
   if w.filename:body+=f'<p><a href="/file/{id}">Скачать файл студента</a></p>'
-  return page(r,'Проверка работы',body+'<form method="post">'+token(r)+'<label>Оценка 0–100<input name="score" type="number" min="0" max="100" required></label><label>Комментарий<textarea name="comment"></textarea></label><label>Решение<select name="decision"><option value="graded">Оценить</option><option value="revision">Вернуть на доработку</option></select></label><button>Сохранить</button></form>')
+  return page(r,'Проверка работы',body+'<form method="post">'+token(r)+f'<label>Оценка 0–100<input name="score" type="number" min="0" max="100" value="{w.score if w.score is not None else 0}" required></label><label>Комментарий<textarea name="comment" maxlength="5000">{h(w.comment)}</textarea></label><label>Решение<select name="decision"><option value="graded">Оценить</option><option value="revision">Вернуть на доработку</option></select></label><button>Сохранить</button></form>')
 @app.post('/admin/review/{id}')
 def review(r:Request,id:int,score:int=Form(...),comment:str=Form(''),t:str=Form('',alias='token'),decision:str=Form('graded')):
  csrf(r,t)
