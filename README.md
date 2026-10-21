@@ -18,10 +18,10 @@
 проверяются вручную. Конспекты вводные, сгруппированы по этапам и доступны для редактирования.
 Для VPN и отдельных служб нужна совместимая модель симулятора или лабораторная ВМ.
 
-## Локальный запуск (PowerShell, Python 3.11)
+## Локальный запуск (PowerShell, Python 3.12)
 
 ```powershell
-py -3.11 -m venv .venv
+py -3.12 -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.txt
 $env:ADMIN_EMAIL="teacher@example.com"
 $env:ADMIN_PASSWORD="your-unique-password-at-least-12-chars"
@@ -97,3 +97,4 @@ python init_db.py при сборке. Output Directory задавать не н
 - [Private Blob](https://vercel.com/docs/vercel-blob/private-storage)
 - [Python SDK](https://vercel.com/docs/vercel-blob/python-sdk-reference)
 - [Лимиты функций](https://vercel.com/docs/functions/limitations)
+
