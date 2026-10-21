@@ -75,4 +75,3 @@ def test_module_content_matches_exam_and_invalid_answers_rejected():
     for answer in (None, '0', [None], ['x'*121]):
         assert c.post('/api/learn/1?demo=true',headers={'X-CSRF-Token':token},json={'action':'check','id':'client-1','answer':answer}).status_code==400
     assert c.get('/api/learn/1').status_code==401
-

@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="ru" data-theme="light">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Сеть начинается здесь · Network Exam</title><link rel="stylesheet" href="/static/learn.css"><script src="/static/learn.js" defer></script></head>
-<body data-demo="{{DEMO}}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Сеть начинается здесь · Network Exam</title><link rel="stylesheet" href="/static/learn.css"><script src="/static/course-ui.js" defer></script><script src="/static/learn.js" defer></script></head>
+<body data-demo="{{DEMO}}" data-module="{{MODULE}}">
 <a class="skip" href="#content">К содержимому</a>
 <aside class="sidebar" aria-label="Навигация по модулю">
  <a class="brand" href="/dashboard"><span class="brand-icon">↗</span> NETWORK<span class="brand-sub">учимся на практике</span></a>
  <div class="sidebar-label">ВАШ МАРШРУТ</div><button class="module-home active" data-view="home"><span class="module-number">01</span><span>Как устроена сеть<small>От запроса до ответа</small></span></button>
  <nav id="lesson-nav" aria-label="Уроки"></nav>
- <nav class="finish-nav" aria-label="Практика и проверка"><button data-view="lab">◇ Конструктор сети <span id="lab-status"></span></button><button data-view="exam">◎ Итоговый тест <span id="exam-status"></span></button></nav>
- <div class="sidebar-bottom"><div id="sidebar-progress"></div><div class="roadmap-note">Далее по программе<br><strong>02 · Канальный уровень</strong><br>Следующий модуль — после согласования этого образца.</div><a href="/dashboard">← К действующему курсу</a></div>
+ <nav class="finish-nav" aria-label="Практика и проверка"><button data-view="lab">◇ Практическая модель <span id="lab-status"></span></button><button data-view="exam">◎ Итоговый тест <span id="exam-status"></span></button></nav>
+ <div class="sidebar-bottom"><div id="sidebar-progress"></div><div class="roadmap-note"><label for="module-picker">Перейти к модулю</label><select id="module-picker"></select><small>60 тем · 40 практических работ</small></div><a href="/dashboard">← К действующему курсу</a></div>
 </aside>
 <div class="workspace"><header class="topbar"><div>Курс <span>/</span> <b>Основы сетей</b></div><div class="top-actions"><button id="theme" aria-label="Переключить цветовую тему">◐ Тема</button><a href="/journal">Журнал</a></div></header>
 <div id="mode-banner" class="mode-banner"></div>
@@ -16,4 +16,3 @@
 <footer>Network Exam · Модуль 01 <span>Понимание важнее запоминания.</span></footer></div>
 <div id="toast" role="status" aria-live="polite"></div>
 </body></html>
-

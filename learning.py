@@ -7,11 +7,13 @@ from contextlib import contextmanager
 
 from fastapi import Request, HTTPException
 from fastapi.responses import HTMLResponse
-from sqlalchemy import Column, Integer, Text, ForeignKey, select
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, select, delete
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from main import B, DB, User, app, csrf, user, h, P
+from main import B, DB, User, Lesson, Work, app, csrf, user, h, P
 from module1_content import LESSONS, EXAM
+from course_catalog import MODULES, SOURCE_P
+from course_labs import LABS, simulate, terminal
 
 
 class LearningProgress(B):
@@ -20,28 +22,98 @@ class LearningProgress(B):
     payload = Column(Text, nullable=False, default='{}')
 
 
+class CourseProgress(B):
+    __tablename__ = 'learning_course'
+    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
+    module_id = Column(Integer, primary_key=True)
+    payload = Column(Text, nullable=False, default='{}')
+
+
+class DemoProgress(B):
+    __tablename__ = 'learning_demo'
+    id = Column(String(64), primary_key=True)
+    payload = Column(Text, nullable=False, default='{}')
+    updated = Column(Integer, nullable=False)
+
+
+def module(number):
+    if number not in MODULES: raise HTTPException(404, 'Модуль не найден')
+    return MODULES[number]
+
+
+def account_states(d, uid):
+    rows={row.module_id:initial()|json.loads(row.payload) for row in d.scalars(select(CourseProgress).where(CourseProgress.user_id==uid))}
+    first=d.get(LearningProgress,uid)
+    if first: rows[1]=initial()|json.loads(first.payload)
+    return rows
+
+
+def passed(state):
+    return state.get('lab',False) and (state.get('best') or 0)>=70
+
+
 def initial():
     return dict(solved={}, attempts={}, hints=[], lab=False, lab_attempts=0,
                 exam=None, history=[], best=None, wrong=[], draft=None)
 
 
 @contextmanager
-def progress(r, demo):
-    if demo:
-        state = initial() | copy.deepcopy(r.session.get('learn_demo', {}))
-        yield state
-        # State is intentionally compact: answers/explanations never enter the cookie.
-        r.session['learn_demo'] = state
-    else:
-        with DB() as d:
+def progress(r, demo, module_id=1):
+    module(module_id)
+    with DB() as d:
+        if demo:
+            key=r.session.get('course_demo')
+            row=d.scalar(select(DemoProgress).where(DemoProgress.id==key).with_for_update()) if key else None
+            if row is None:
+                d.execute(delete(DemoProgress).where(DemoProgress.updated<int(time.time())-14*86400))
+                key=secrets.token_urlsafe(24)
+                row=DemoProgress(id=key,payload=json.dumps({'1':r.session.pop('learn_demo',{})}),updated=int(time.time()))
+                d.add(row);r.session['course_demo']=key
+            states=json.loads(row.payload)
+            state=initial()|states.get(str(module_id),{})
+            yield state
+            states[str(module_id)]=state
+            row.payload=json.dumps(states,ensure_ascii=False);row.updated=int(time.time())
+        else:
             u = user(r, d)
+            states=account_states(d,u.id)
+            if u.role!='admin' and any(not passed(states.get(i,{})) for i in range(1,module_id)):
+                raise HTTPException(403,'Сначала пройдите предыдущие модули: практика и итоговый тест от 70/100')
+            model=LearningProgress if module_id==1 else CourseProgress
+            values=dict(user_id=u.id,payload='{}')
+            if module_id!=1: values['module_id']=module_id
             insert = pg_insert if d.bind.dialect.name == 'postgresql' else sqlite_insert
-            d.execute(insert(LearningProgress).values(user_id=u.id, payload='{}').on_conflict_do_nothing())
-            row = d.scalar(select(LearningProgress).where(LearningProgress.user_id == u.id).with_for_update())
+            d.execute(insert(model).values(**values).on_conflict_do_nothing())
+            query=select(model).where(model.user_id==u.id)
+            if module_id!=1: query=query.where(model.module_id==module_id)
+            row=d.scalar(query.with_for_update())
             state = initial() | json.loads(row.payload)
             yield state
             row.payload = json.dumps(state, ensure_ascii=False)
-            d.commit()
+        d.commit()
+
+
+def catalog(r,demo):
+    with DB() as d:
+        if demo:
+            row=d.get(DemoProgress,r.session.get('course_demo',''))
+            states={int(k):v for k,v in json.loads(row.payload).items()} if row else {}
+            preview=True
+        else:
+            u=user(r,d);states=account_states(d,u.id);preview=u.role=='admin'
+        return [dict(id=i,title=m['title'],goal=m['goal'],theory=m['theory'],practice=m['practice'],passed=passed(states.get(i,{})),available=preview or all(passed(states.get(j,{})) for j in range(1,i))) for i,m in MODULES.items()]
+
+
+def practical_tasks(r,demo,m):
+    with DB() as d:
+        uid=None if demo else user(r,d).id
+        works={w.lesson_id:w for w in d.scalars(select(Work).where(Work.user_id==uid))} if uid else {}
+        lessons={l.number:l for l in d.scalars(select(Lesson).where(Lesson.kind=='practice'))}
+        result=[]
+        for n in m['practice']:
+            lesson=lessons.get(n);w=works.get(lesson.id) if lesson else None
+            result.append(dict(number=n,title=SOURCE_P[n],url='/lesson/'+str(lesson.id) if lesson and not demo else '/login',status=w.status if w else 'new',score=w.score if w else None))
+        return result
 
 
 def completed(state, lesson):
@@ -52,7 +124,8 @@ def public_question(q):
     return {k: q[k] for k in ('id', 'kind', 'prompt', 'options')}
 
 
-def public_state(state):
+def public_state(state, module_id=1):
+    LESSONS=module(module_id)["lessons"];EXAM=module(module_id)["exam"]
     done = [l['id'] for l in LESSONS if completed(state, l)]
     unlocked = [l['id'] for i, l in enumerate(LESSONS) if i == 0 or completed(state, LESSONS[i-1])]
     exam = state.get('exam')
@@ -73,7 +146,8 @@ def evaluate(q, answer):
     return set(normalized)==set(expected) and len(normalized)==len(expected) if q['kind']=='multi' else normalized==expected
 
 
-def find_question(state, id):
+def find_question(state, id, module_id=1):
+    LESSONS=module(module_id)["lessons"]
     for i, lesson in enumerate(LESSONS):
         for q in lesson['questions']:
             if q['id']==id:
@@ -83,31 +157,39 @@ def find_question(state, id):
     raise HTTPException(404, 'Задание не найдено')
 
 
-@app.get('/learn/1', response_class=HTMLResponse)
-def learning_page(r:Request):
+@app.get('/learn/{module_id}', response_class=HTMLResponse)
+def learning_page(r:Request, module_id:int):
     with DB() as d: user(r,d)
-    return render(r, False)
+    return render(r, False, module_id)
 
 
-@app.get('/learn/1/demo', response_class=HTMLResponse)
-def demo_page(r:Request):
-    return render(r, True)
+@app.get('/learn/{module_id}/demo', response_class=HTMLResponse)
+def demo_page(r:Request, module_id:int):
+    return render(r, True, module_id)
 
 
-def render(r, demo):
+def render(r, demo, module_id):
+    module(module_id)
     template = (P/'static/learn.html').read_text(encoding='utf-8')
-    return HTMLResponse(template.replace('{{DEMO}}', 'true' if demo else 'false'))
+    return HTMLResponse(template.replace('{{DEMO}}', 'true' if demo else 'false').replace('{{MODULE}}',str(module_id)))
 
 
-@app.get('/api/learn/1')
-def learning_data(r:Request, demo:bool=False):
-    with progress(r,demo) as state:
-        lessons = [{k:v for k,v in l.items() if k!='questions'} | {'questions':[public_question(q) for q in l['questions']]} for l in LESSONS]
-        return dict(lessons=lessons, state=public_state(state), token=r.session['csrf'])
+@app.get('/api/learn/{module_id}')
+def learning_data(r:Request, module_id:int, demo:bool=False):
+    m=module(module_id)
+    with progress(r,demo,module_id) as state:
+        lessons=[{k:v for k,v in l.items() if k not in ('questions','exam')} | {'questions':[public_question(q) for q in l['questions']]} for l in m['lessons']]
+        result=dict(lessons=lessons,state=public_state(state,module_id),token=r.session['csrf'],
+                    module={k:v for k,v in m.items() if k not in ('lessons','exam')},
+                    lab=LABS.get(module_id),exam_count=len(m['exam']))
+    result['catalog']=catalog(r,demo)
+    result['practice']=practical_tasks(r,demo,m)
+    return result
 
 
-@app.post('/api/learn/1')
-async def learning_action(r:Request, demo:bool=False):
+@app.post('/api/learn/{module_id}')
+async def learning_action(r:Request, module_id:int, demo:bool=False):
+    m=module(module_id);LESSONS=m["lessons"];EXAM=m["exam"]
     csrf(r, r.headers.get('X-CSRF-Token',''))
     raw = await r.body()
     if len(raw)>12000: raise HTTPException(413)
@@ -115,12 +197,12 @@ async def learning_action(r:Request, demo:bool=False):
     except (ValueError, UnicodeDecodeError): raise HTTPException(400, 'Некорректный запрос')
     if not isinstance(data,dict): raise HTTPException(400)
     action = data.get('action')
-    with progress(r,demo) as state:
+    with progress(r,demo,module_id) as state:
         feedback={}
-        if state['exam'] and action in ('check','hint','lab'):
+        if state['exam'] and action in ('check','hint','lab','simulate','terminal'):
             raise HTTPException(409, 'Завершите активную попытку теста; подсказки во время теста недоступны')
         if action in ('check','hint'):
-            question=find_question(state,data.get('id'))
+            question=find_question(state,data.get('id'),module_id)
             id=question['id']
             if action=='hint':
                 if id not in state['hints']: state['hints'].append(id)
@@ -134,8 +216,21 @@ async def learning_action(r:Request, demo:bool=False):
                     state['wrong']=[x for x in state['wrong'] if x!=id]
                 elif id not in state['wrong']: state['wrong'].append(id)
                 feedback=dict(correct=correct, explanation=question['explanation'])
+        elif action in ('simulate','terminal') or (action=='lab' and module_id!=1):
+            if module_id not in LABS: raise HTTPException(400,'В этом модуле используется конструктор')
+            if action=='lab' and not all(completed(state,l) for l in LESSONS):
+                raise HTTPException(403,'Завершите все уроки модуля')
+            try:
+                if action=='terminal':
+                    if module_id!=10: raise ValueError('Терминал доступен в модуле диагностики')
+                    feedback=terminal(data.get('config',{}),data.get('command'))
+                else: feedback=simulate(module_id,data.get('config',{}))
+            except ValueError as error: raise HTTPException(400,str(error))
+            if action=='lab':
+                state['lab_attempts']+=1;state['draft']=feedback['config']
+                if feedback['correct']: state['lab']=True
         elif action=='lab':
-            if not all(completed(state,l) for l in LESSONS): raise HTTPException(403, 'Завершите шесть уроков')
+            if not all(completed(state,l) for l in LESSONS): raise HTTPException(403, 'Завершите все уроки модуля')
             state['lab_attempts']+=1
             devices=data.get('devices',{})
             edges=data.get('edges',[])
@@ -158,7 +253,7 @@ async def learning_action(r:Request, demo:bool=False):
             if not state['lab']: raise HTTPException(403, 'Сначала выполните практику')
             if not state['exam']:
                 ids=[q['id'] for q in EXAM]; secrets.SystemRandom().shuffle(ids)
-                state['exam']=dict(id=secrets.token_hex(8),deadline=int(time.time())+600,ids=ids)
+                state['exam']=dict(id=secrets.token_hex(8),deadline=int(time.time())+m["exam_seconds"],ids=ids)
         elif action=='finish_exam':
             exam=state.get('exam')
             if not exam or data.get('id')!=exam['id']: raise HTTPException(409, 'Эта попытка уже завершена или не найдена')
@@ -180,15 +275,14 @@ async def learning_action(r:Request, demo:bool=False):
         elif action=='reset_demo' and demo:
             state.clear();state.update(initial())
         else: raise HTTPException(400, 'Неизвестное действие')
-        return dict(state=public_state(state), **feedback)
+        return dict(state=public_state(state,module_id), **feedback)
 
 
 def teacher_summary(d, uid):
-    row=d.get(LearningProgress,uid)
-    if not row: return '<p>Интерактивный модуль 1: ещё не начат.</p>'
-    state=initial()|json.loads(row.payload)
-    done=sum(completed(state,l) for l in LESSONS)
-    attempts=sum(state['attempts'].values())
-    best=str(state['best'])+'/100' if state['best'] is not None else 'не сдан'
-    return f'<section><h2>Интерактивный модуль 1</h2><p>Уроки: {done}/6 · Проверки: {len(state["solved"])}/18 · Попыток: {attempts} · Подсказок: {len(state["hints"])}.</p><p>Практика: {"выполнена" if state["lab"] else "не выполнена"} · Лучший итоговый тест: {h(best)}.</p><p>Тренировочный результат учитывается отдельно от выставленных преподавателем оценок.</p></section>'
-
+    states=account_states(d,uid);rows=[]
+    for i,m in MODULES.items():
+        state=initial()|states.get(i,{})
+        done=sum(completed(state,l) for l in m['lessons'])
+        best=str(state['best'])+'/100' if state['best'] is not None else '—'
+        rows.append(f'<tr><td>{i}. {h(m["title"])}</td><td>{done}/{len(m["lessons"])}</td><td>{len(state["solved"])}/{3*len(m["lessons"])}</td><td>{"✓" if state["lab"] else "—"}</td><td>{h(best)}</td></tr>')
+    return '<section><h2>Интерактивный курс · 14 модулей</h2><p>Автоматические результаты отделены от оценок преподавателя за отчёты и этапы.</p><div style="overflow:auto"><table><thead><tr><th>Модуль</th><th>Уроки</th><th>Проверки</th><th>Модель</th><th>Тест</th></tr></thead><tbody>'+''.join(rows)+'</tbody></table></div></section>'

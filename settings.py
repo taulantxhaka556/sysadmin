@@ -11,4 +11,3 @@ if ON_VERCEL:
         raise RuntimeError('Vercel requires a persistent PostgreSQL DATABASE_URL')
     if len(SESSION_SECRET) < 32 or SESSION_SECRET.startswith('replace-'):
         raise RuntimeError('Set a random SESSION_SECRET of at least 32 characters')
-

@@ -83,4 +83,3 @@ EXAM = [
 ]
 for item, lesson in zip(EXAM, LESSONS):
     item['source'] = lesson['source']
-

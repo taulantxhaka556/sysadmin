@@ -105,4 +105,3 @@ def analytics(r:Request):
 def analytics_csv(r:Request):
  with DB() as d:
   user(r,d,True);output=io.StringIO();writer=csv.writer(output);writer.writerow(HEAD);writer.writerows(stats(d));return Response('\ufeff'+output.getvalue(),media_type='text/csv',headers={'Content-Disposition':'attachment; filename="analytics.csv"'})
-

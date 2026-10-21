@@ -61,4 +61,3 @@ async def file_response(reference):
     if not path.is_file():
         raise HTTPException(404, 'Файл не найден')
     return FileResponse(path, filename='submission' + path.suffix, media_type='application/octet-stream', headers=headers)
-

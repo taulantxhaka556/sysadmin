@@ -188,4 +188,3 @@ def exam_start(r:Request):
         for ex in exams:
             body+=f'<a class="item" href="/exam/{ex.id}">Экзамен №{ex.id} · {h(ex.created[:10])}<span>{str(ex.score)+"/100" if ex.score is not None else "Без оценки"}</span></a>'
         return page(r,'Пробный экзамен',body+'</div>')
-

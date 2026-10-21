@@ -57,4 +57,3 @@ html = '''<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewp
 <h2>Покрытие: все 100 пунктов</h2><p>Т — теория; П — практика. У каждого пункта ровно один основной учебный адрес. Связанные уроки дополнительно ссылаются друг на друга.</p><div class="table"><table><thead><tr><th>№</th><th>Исходный вопрос / задание</th><th>Урок / практика</th></tr></thead><tbody>''' + ''.join(rows) + '</tbody></table></div></main></html>'
 (ROOT / 'docs/course-plan.html').write_text(html, encoding='utf-8')
 print(f'Coverage verified: {len(mapping)} / 100, modules: {len(modules)}')
-
