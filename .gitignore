@@ -1,0 +1,15 @@
+.env
+local.db
+uploads/*
+!uploads/.gitkeep
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.test-data/
+*.db
+*.db-*
+.env.*
+!.env.example
+deployment-secrets.txt
+.vercel/

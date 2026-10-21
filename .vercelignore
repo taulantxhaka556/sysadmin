@@ -1,0 +1,11 @@
+.git
+.venv
+.env*
+*.db
+*.db-*
+uploads
+__pycache__
+.pytest_cache
+.test-data
+tests
+deployment-secrets.txt
