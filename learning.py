@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, select, delete
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from main import B, DB, User, Lesson, Work, app, csrf, user, h, P
+from main import B, DB, User, Lesson, Work, app, csrf, user, h, P, go, token
 from module1_content import LESSONS, EXAM
 from course_catalog import MODULES, SOURCE_P
 from course_labs import LABS, simulate, terminal
@@ -157,6 +157,15 @@ def find_question(state, id, module_id=1):
     raise HTTPException(404, 'Задание не найдено')
 
 
+@app.get('/learn')
+def resume_course(r:Request):
+    with DB() as d:
+        u=user(r,d)
+        states=account_states(d,u.id)
+        number=next((i for i in MODULES if not passed(states.get(i,{}))),14)
+    return go('/learn/'+str(number))
+
+
 @app.get('/learn/{module_id}', response_class=HTMLResponse)
 def learning_page(r:Request, module_id:int):
     with DB() as d: user(r,d)
@@ -165,13 +174,16 @@ def learning_page(r:Request, module_id:int):
 
 @app.get('/learn/{module_id}/demo', response_class=HTMLResponse)
 def demo_page(r:Request, module_id:int):
+    if r.session.get('uid'):
+        return go('/learn')
     return render(r, True, module_id)
 
 
 def render(r, demo, module_id):
     module(module_id)
     template = (P/'static/learn.html').read_text(encoding='utf-8')
-    return HTMLResponse(template.replace('{{DEMO}}', 'true' if demo else 'false').replace('{{MODULE}}',str(module_id)))
+    controls='' if demo else '<a href="/assignments">Отчёты</a>'+('<a href="/admin">Преподаватель</a>' if r.session.get('role')=='admin' else '')+'<form class="inline" method="post" action="/logout">'+token(r)+'<button>Выйти</button></form>'
+    return HTMLResponse(template.replace('{{DEMO}}', 'true' if demo else 'false').replace('{{MODULE}}',str(module_id)).replace('{{ACCOUNT}}',controls))
 
 
 @app.get('/api/learn/{module_id}')

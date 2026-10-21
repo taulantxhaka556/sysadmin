@@ -59,7 +59,9 @@ def health():
 @app.get('/')
 def home(r:Request):return go('/dashboard' if r.session.get('uid') else '/login')
 @app.get('/login')
-def login_page(r:Request):return page(r,'Вход','<section><h2>Сеть начинается с простого запроса</h2><p>Попробуйте 14 интерактивных модулей: схемы, короткие задания, сетевые модели и итоговые тесты.</p><a class="button" href="/learn/1/demo">Попробовать без регистрации →</a></section><form method="post">'+token(r)+'<label>Email<input type="email" name="email" required></label><label>Пароль<input type="password" name="password" required></label><button>Войти</button></form>')
+def login_page(r:Request):
+ if r.session.get('uid'):return go('/dashboard')
+ return page(r,'Вход','<section><h2>Сеть начинается с простого запроса</h2><p>Попробуйте 14 интерактивных модулей: схемы, короткие задания, сетевые модели и итоговые тесты.</p><a class="button" href="/learn/1/demo">Попробовать без регистрации →</a></section><form method="post">'+token(r)+'<label>Email<input type="email" name="email" required></label><label>Пароль<input type="password" name="password" required></label><button>Войти</button></form>')
 @app.post('/login')
 def login(r:Request,email:str=Form(...),password:str=Form(...),t:str=Form('',alias='token')):
  csrf(r,t)
@@ -85,6 +87,11 @@ def register(r:Request,name:str=Form(...),email:str=Form(...),password:str=Form(
   u=User(name=name.strip()[:120],email=email.strip().lower(),pw=hashed(password),group_id=group_id);d.add(u);d.commit();r.session.clear();r.session.update({'uid':u.id,'csrf':secrets.token_urlsafe(24)})
  return go('/dashboard')
 @app.get('/dashboard')
+def course_dashboard(r:Request):
+ with DB() as d:user(r,d)
+ return go('/learn')
+
+@app.get('/assignments')
 def dashboard(r:Request):
  from journal import STAGES,stage_of,STATUS
  with DB() as d:
