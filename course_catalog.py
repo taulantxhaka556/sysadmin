@@ -43,3 +43,10 @@ for number,(title,theory,practice,goal) in enumerate(PLAN,1):
                          lessons=lessons,exam=exam,exam_seconds=max(600,len(exam)*100))
 assert sorted(n for m in MODULES.values() for n in m['theory'])==list(range(1,61))
 assert sorted(n for m in MODULES.values() for n in m['practice'])==list(range(1,41))
+
+# Supplement existing lessons without changing IDs, questions or saved progress.
+from detailed_materials import MATERIALS
+for m in MODULES.values():
+    for lesson in m['lessons']:
+        lesson['detail']=MATERIALS['theory:'+str(lesson['source'])]
+        lesson['minutes']=max(lesson['minutes'],lesson['detail']['minutes'])

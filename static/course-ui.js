@@ -38,3 +38,8 @@ function showModelResult(root,data){
   $('.model-output',root).innerHTML=`<p class="q-feedback ${data.correct?'good':'bad'}">${esc(data.explanation)}</p><div class="actions"><button class="secondary trace-next">Разобрать по шагам →</button><span class="trace-position">Все шаги</span></div><ol class="model-trace">${data.trace.map(t=>`<li class="${t.ok?'ok':'fail'}"><strong>${t.ok?'✓':'↺'} ${esc(t.title)}</strong><p>${esc(t.detail)}</p></li>`).join('')}</ol><div class="model-table"><table><thead><tr>${data.table.headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${data.table.rows.map(row=>`<tr>${row.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   let step=-1;$('.trace-next',root).onclick=()=>{const rows=$$('.model-trace li',root);step=(step+1)%(rows.length+1);rows.forEach((row,i)=>{row.hidden=step<rows.length&&i!==step;});$('.trace-position',root).textContent=step===rows.length?'Все шаги':('Шаг '+(step+1)+' из '+rows.length);};
 }
+
+function detailedReading(d){
+  if(!d)return '';
+  return `<section class="detailed-reading"><div class="eyebrow">ПОНИМАНИЕ В ДЕТАЛЯХ</div><h2>Разберём на практике</h2><div class="detail-columns">${d.sections.map(s=>`<article><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p></article>`).join('')}</div><div class="worked-example"><span class="pill">ПРИМЕР</span><h3>${esc(d.example.title)}</h3><p>${esc(d.example.text)}</p>${d.example.code?`<pre><code>${esc(d.example.code)}</code></pre>`:""}</div><div class="independent-task"><h3>Теперь ваша очередь</h3><p>${esc(d.exercise.task)}</p><details><summary>Свериться с решением</summary><p>${esc(d.exercise.solution)}</p></details></div></section>`;
+}

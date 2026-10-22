@@ -36,8 +36,10 @@ def csrf(r,t):
  if not t or not hmac.compare_digest(t,r.session.get('csrf','')):raise HTTPException(403,'CSRF')
 def token(r):return '<input type="hidden" name="token" value="'+h(r.session['csrf'])+'">'
 def page(r,title,body):
- nav=('<a href="/dashboard">Учёба</a> <a href="/trainer">Тренажёр</a> <a href="/exam">Экзамен</a> <a href="/journal">Журнал</a> '+('<a href="/admin">Преподаватель</a> ' if r.session.get('role')=='admin' else '')+'<form class="inline" method="post" action="/logout">'+token(r)+'<button>Выйти</button></form>') if r.session.get('uid') else '<a href="/login">Вход</a> <a href="/register">Регистрация</a>'
- return HTMLResponse('<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+h(title)+'</title><link rel="stylesheet" href="/static/style.css"><header><b>🌐 Network Exam</b><nav>'+nav+'</nav></header><main><h1>'+h(title)+'</h1>'+body+'</main></html>')
+ from ui import shell
+ with DB() as d:
+  person=d.get(User,r.session.get('uid')) if r.session.get('uid') else None
+  return HTMLResponse(shell(title,body,r.url.path,token(r),person))
 from fastapi.staticfiles import StaticFiles
 app.mount('/static',StaticFiles(directory=str(P/'static')),name='static')
 @app.middleware('http')
@@ -116,6 +118,8 @@ def lesson(r:Request,id:int):
   u=user(r,d);l=d.get(Lesson,id)
   if not l:raise HTTPException(404)
   w=d.scalar(select(Work).where(Work.user_id==u.id,Work.lesson_id==id));body=f'<p class="tag">{"Теория" if l.kind=="theory" else "Практика"} № {l.number}</p><section><h2>{h(l.title)}</h2><h3>Материал</h3><p class="pre">{h(l.material) if l.material else "Преподаватель пока не добавил учебный материал."}</p></section>'
+  from detailed_materials import material_html
+  body+=material_html(l.kind,l.number)
   if u.role=='student' and (not w or w.status not in ('pending','graded')):
    body+=f'<form method="post" action="/lesson/{id}/submit" enctype="multipart/form-data">'+token(r)
    body+='<label>'+('Ответ на вопрос своими словами' if l.kind=='theory' else 'Отчёт: что настроено, как проверено, какой результат')+'<textarea name="answer" rows="6" minlength="20" maxlength="15000" required>'+h(w.answer if w else '')+'</textarea></label>'
