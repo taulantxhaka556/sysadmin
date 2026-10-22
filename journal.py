@@ -108,6 +108,8 @@ def student_journal(r, d, student, teacher):
     grades = {g.stage:g for g in d.scalars(select(StageGrade).where(StageGrade.user_id==student.id))}
     lessons = d.scalars(select(Lesson).order_by(Lesson.kind.desc(),Lesson.number)).all()
     body = '<p>'+h(student.name)+' · Итоговые оценки выставляет преподаватель.</p>'
+    if teacher:
+        body=f'<p><a href="/admin/groups/{student.group_id or 0}">← К группе студента</a></p>'+body
     from learning import teacher_summary
     body += teacher_summary(d, student.id)
     for n,title in STAGES.items():

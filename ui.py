@@ -23,9 +23,10 @@ def shell(title, body, path, csrf_token, person=None):
     signed=person is not None
     links=[('/dashboard','Продолжить курс','home'),('/assignments','Материалы и отчёты','book'),('/journal','Журнал оценок','book'),('/trainer','Тренажёр IPv4','lab'),('/exam','Пробный экзамен','exam')]
     if signed and person.role=='admin':
-        links += [('/admin','Преподавателю','admin'),('/admin/analytics','Аналитика','lab'),('/admin/exams','Проверка экзаменов','exam')]
+        links += [('/admin','Группы и обучение','admin'),('/admin/analytics','Аналитика','lab'),('/admin/exams','Проверка экзаменов','exam')]
     def active(url):
         if url=='/assignments': return path.startswith(('/assignments','/modules','/lesson'))
+        if url=='/admin': return path=='/admin' or path.startswith(('/admin/groups','/admin/students','/admin/review','/admin/edit'))
         return path==url or (url=='/exam' and path.startswith('/exam/'))
     nav=''.join(f'<a href="{url}"'+(' aria-current="page"' if active(url) else '')+'>'+icon(i)+h(label)+'</a>' for url,label,i in links)
     if signed:
@@ -36,4 +37,4 @@ def shell(title, body, path, csrf_token, person=None):
         frame=f'''{sidebar}<div class="workspace"><header class="topbar"><button class="menu-toggle secondary" aria-expanded="false" aria-controls="navigation" aria-label="Открыть меню">{icon('menu')}</button><span>Network Exam<span class="topbar-description"> / Подготовка к экзамену</span></span><a href="/assignments">Учебный маршрут {icon('arrow')}</a></header><main id="main"><div class="page-heading"><h1>{h(title)}</h1></div>{body}<footer class="footer"><span>Network Exam · Учитесь понимать сети</span><a href="/assignments">К программе курса</a></footer></main></div>'''
     else:
         frame=f'''<header class="public-header">{brand}<nav aria-label="Навигация"><a href="/login">Вход</a><a href="/register">Регистрация</a></nav></header><main id="main" class="auth-layout"><div class="auth-story"><p class="auth-topic">Компьютерные сети и администрирование</p><h2>Понимать сеть.<br>Управлять связью.</h2><p>Пройдите путь от основ передачи данных до настройки и защиты корпоративной сети.</p><div class="auth-facts"><div><strong>14</strong><span>учебных модулей</span></div><div><strong>60</strong><span>теоретических тем</span></div><div><strong>40</strong><span>практических работ</span></div></div><div class="network-map" aria-hidden="true"><span>Клиент</span><i></i><span>Коммутатор</span><i></i><span>Сервер</span></div></div><div class="auth-form"><h1>{h(title)}</h1>{body}</div></main>'''
-    return f'''<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f2f5f5"><title>{h(title)} · Network Exam</title><link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script></head><body data-user="{person.id if signed else 'guest'}"><a class="skip-link" href="#main">К содержимому</a>{frame}</body></html>'''
+    return f'''<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f2f5f5"><title>{h(title)} · Network Exam</title><link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="/static/admin.css"><script src="/static/app.js" defer></script></head><body data-user="{person.id if signed else 'guest'}"><a class="skip-link" href="#main">К содержимому</a>{frame}</body></html>'''

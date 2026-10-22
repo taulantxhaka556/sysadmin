@@ -146,25 +146,12 @@ async def submit(r:Request,id:int,t:str=Form('',alias='token'),answer:str=Form('
  return go('/lesson/'+str(id))
 @app.get('/admin')
 def admin(r:Request):
- with DB() as d:
-  user(r,d,True);groups=d.scalars(select(Group)).all();students=d.scalars(select(User).where(User.role=='student')).all();works=d.scalars(select(Work)).all();ls={l.id:l for l in d.scalars(select(Lesson))};names={g.id:g.name for g in groups};body='<p><a href="/journal">Журнал оценок</a> · <a href="/admin/analytics">📊 Расширенная аналитика</a> · <a href="/admin/exams">📝 Проверка пробных экзаменов</a></p><h2>Группы</h2><form method="post" action="/admin/group">'+token(r)+'<input name="name" placeholder="ИС-24-1" required><button>Создать группу</button></form><p>'+', '.join(h(g.name) for g in groups)+'</p><h2>Студенты</h2><a href="/admin/report.csv">Экспорт CSV</a><div class="list">'
-  for u in students:
-   uw=[w for w in works if w.user_id==u.id];th=sum(1 for w in uw if ls[w.lesson_id].kind=='theory' and w.status in ('done','graded'));pr=sum(1 for w in uw if ls[w.lesson_id].kind=='practice' and w.status=='graded');body+=f'<div class="item">{h(u.name)} — {h(names.get(u.group_id))} — теория {th}/60, практика {pr}/40</div>'
-  body+='</div><h2>Ожидают проверки</h2><div class="list">'
-  for w in works:
-   if w.status=='pending':
-    u=next((x for x in students if x.id==w.user_id),None);body+=f'<a class="item" href="/admin/review/{w.id}">{h(u.name if u else "Студент")} — {"Теория" if ls[w.lesson_id].kind=="theory" else "Практика"} № {ls[w.lesson_id].number}</a>'
-  body+='</div><h2>Редактировать учебные материалы</h2><div class="list">'
-  for l in ls.values():body+=f'<a class="item" href="/admin/edit/{l.id}">{h(l.kind)} № {l.number}: {h(l.title)}</a>'
-  return page(r,'Панель преподавателя',body+'</div>')
+ from admin_dashboard import overview
+ return overview(r)
 @app.post('/admin/group')
 def group(r:Request,name:str=Form(...),t:str=Form('',alias='token')):
- csrf(r,t)
- with DB() as d:
-  user(r,d,True)
-  if len(name.strip())<2:raise HTTPException(400)
-  if not d.scalar(select(Group).where(Group.name==name.strip())):d.add(Group(name=name.strip()[:120]));d.commit()
- return go('/admin')
+ from admin_dashboard import create_group
+ return create_group(r,name,t)
 @app.get('/admin/edit/{id}')
 def edit(r:Request,id:int):
  with DB() as d:
@@ -217,6 +204,7 @@ def report(r:Request):
 import upgrade  # noqa: E402 - register extended routes
 import journal
 import learning
+import admin_dashboard
 
 def initialize_database():
  # Explicit bootstrap, not a write on every serverless cold start.
