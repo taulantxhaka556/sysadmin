@@ -4,6 +4,7 @@ function setupCourse(){
   document.title=course.title+' · Network Exam';
   $('.module-home').innerHTML=`<span class="module-number">${String(moduleId).padStart(2,'0')}</span><span>${esc(course.title)}<small>Теория → практика → тест</small></span>`;
   $('.topbar b').textContent=course.title;
+  if(moduleId===1&&!$('#basics-nav')){$('.finish-nav').insertAdjacentHTML('beforebegin','<button id="basics-nav" data-view="basics">Начать с азов · 5 тем</button>');}
   $('footer').innerHTML=`Network Exam · Модуль ${moduleId} / 14 <span>Понимание важнее запоминания.</span>`;
   $('#module-picker').innerHTML=catalog.map(m=>`<option value="${m.id}" ${m.id===moduleId?'selected':''} ${m.available?'':'disabled'}>${m.passed?'✓ ':''}${m.id}. ${esc(m.title)}${m.available?'':' · закрыт'}</option>`).join('');
   $('#module-picker').onchange=e=>location.assign(moduleUrl(e.target.value));

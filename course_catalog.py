@@ -50,3 +50,9 @@ for m in MODULES.values():
     for lesson in m['lessons']:
         lesson['detail']=MATERIALS['theory:'+str(lesson['source'])]
         lesson['minutes']=max(lesson['minutes'],lesson['detail']['minutes'])
+
+# Plain-language scaffolding is separate from assessed questions and saved progress.
+BEGINNER=json.loads((Path(__file__).parent/'beginner_content.json').read_text(encoding='utf-8'))
+for m in MODULES.values():
+    for lesson in m['lessons']:
+        lesson['beginner']=BEGINNER[str(lesson['source'])]
