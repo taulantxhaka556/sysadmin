@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="ru" data-theme="light">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Сеть начинается здесь · Network Exam</title><link rel="stylesheet" href="/static/learn.css"><link rel="stylesheet" href="/static/course-theme.css"><link rel="stylesheet" href="/static/beginner.css"><script src="/static/beginner.js" defer></script><script src="/static/course-ui.js" defer></script><script src="/static/learn.js" defer></script></head>
-<body data-demo="{{DEMO}}" data-module="{{MODULE}}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Сеть начинается здесь · Network Exam</title><link rel="stylesheet" href="/static/learn.css"><link rel="stylesheet" href="/static/course-theme.css"><link rel="stylesheet" href="/static/beginner.css"><link rel="stylesheet" href="/static/editorial.css"><script src="/static/editorial.js" defer></script><script src="/static/beginner.js" defer></script><script src="/static/course-ui.js" defer></script><script src="/static/learn.js" defer></script></head>
+<body class="editorial-course" data-demo="{{DEMO}}" data-module="{{MODULE}}">
 <a class="skip" href="#content">К содержимому</a>
-<aside class="sidebar" aria-label="Навигация по модулю">
- <a class="brand" href="/dashboard"><span class="brand-icon">↗</span> NETWORK<span class="brand-sub">учимся на практике</span></a>
+<header class="editorial-header"><a class="editorial-brand" href="/dashboard"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="16" cy="5" r="4"/><circle cx="6" cy="25" r="4"/><circle cx="26" cy="25" r="4"/><path d="m14 9-6 12m10-12 6 12M10 25h12"/></svg><span>Network Exam</span></a><nav class="editorial-links" aria-label="Главная навигация"><button class="active" data-course-home>Мой курс</button><a href="/assignments">Материалы</a><a href="/journal">Журнал</a><a href="/trainer">Тренажёр</a><a href="/exam">Экзамен</a></nav><div class="editorial-account">{{ACCOUNT}}</div></header><details class="course-outline"><summary>Навигация по текущему модулю</summary><aside class="sidebar" aria-label="Навигация по модулю">
+ 
  <div class="sidebar-label">ВАШ МАРШРУТ</div><button class="module-home active" data-view="home"><span class="module-number">01</span><span>Как устроена сеть<small>От запроса до ответа</small></span></button>
  <nav id="lesson-nav" aria-label="Уроки"></nav>
  <nav class="finish-nav" aria-label="Практика и проверка"><button data-view="lab">◇ Практическая модель <span id="lab-status"></span></button><button data-view="exam">◎ Итоговый тест <span id="exam-status"></span></button></nav>
  <div class="sidebar-bottom"><div id="sidebar-progress"></div><div class="roadmap-note"><label for="module-picker">Перейти к модулю</label><select id="module-picker"></select><small>60 тем · 40 практических работ</small></div><a href="/dashboard">← Продолжить курс</a></div>
 </aside>
-<div class="workspace"><header class="topbar"><div>Курс <span>/</span> <b>Основы сетей</b></div><div class="top-actions"><button id="theme" aria-label="Переключить цветовую тему">◐ Тема</button><a href="/journal">Журнал</a>{{ACCOUNT}}</div></header>
+</details><div class="workspace"><header class="topbar editorial-breadcrumb"><div>Курс <span>/</span> <b>Основы сетей</b></div><div class="top-actions"><button id="theme" aria-label="Переключить цветовую тему">◐ Тема</button><a href="/journal">Журнал</a></div></header>
 <div id="mode-banner" class="mode-banner"></div>
 <main id="content" tabindex="-1"><div class="loading" role="status">Загружаем учебный маршрут…</div></main>
 <footer>Network Exam · Модуль 01 <span>Понимание важнее запоминания.</span></footer></div>

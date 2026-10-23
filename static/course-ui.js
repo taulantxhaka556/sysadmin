@@ -10,7 +10,13 @@ function setupCourse(){
   $('#module-picker').onchange=e=>location.assign(moduleUrl(e.target.value));
 }
 function courseMap(){
-  return `<div class="section-head"><h2>Весь курс · 14 модулей</h2><small>60 тем и 40 практических работ</small></div><p class="muted">В учебном аккаунте следующий модуль открывается после практической модели и теста от 70/100. Отчёты по исходным практическим работам сдаются отдельно и оцениваются преподавателем в журнале.</p><div class="course-grid">${catalog.map(m=>{const available=m.available||(m.id===moduleId+1&&state.passed);return `<${available?'a':'div'} ${available?'href="'+moduleUrl(m.id)+'"':''} class="lesson-card ${m.id===moduleId?'current-module':''}" ${available?'':'aria-disabled="true"'}><span class="number">${m.passed||(m.id===moduleId&&state.passed)?'✓':String(m.id).padStart(2,'0')}</span><span><strong>${esc(m.title)}</strong><small>${m.theory.length} тем · ${m.practice.length} отчётов${available?'':' · сначала предыдущие модули'}</small></span></${available?'a':'div'}>`;}).join('')}</div>`;
+  return `<section class="editorial-course-route"><div class="editorial-route-heading"><h2>Ваш учебный маршрут</h2><small>${catalog.length} модулей · 60 тем · 40 практических работ</small></div><div class="editorial-module-grid">${catalog.map(m=>{
+    const available=m.available||(m.id===moduleId+1&&state.passed);
+    const current=m.id===moduleId;
+    const nextLesson=current?(lessons.find(l=>!state.completed.includes(l.id))||lessons[0]):null;
+    const name=`<span class="module-index">${m.passed||(current&&state.passed)?'✓':String(m.id).padStart(2,'0')}</span><h3>${esc(m.title)}</h3>`;
+    return `<article class="editorial-module" ${available?'':'aria-disabled="true"'}>${available?`<a class="module-link" href="${moduleUrl(m.id)}">${name}</a>`:`<div class="module-link">${name}</div>`}<p>${esc(m.goal)}</p>${current&&nextLesson?`<p class="current-lesson">Текущий урок<br>${esc(nextLesson.title)}</p><button class="module-open" data-lesson="${esc(nextLesson.id)}" ${state.unlocked.includes(nextLesson.id)?'':'disabled'}>Открыть урок →</button>`:`<span class="module-state">${m.passed?'Пройден':available?'Доступен':'Сначала предыдущие модули'}</span>`}${editorialModuleArt(m.id)}</article>`;
+  }).join('')}</div></section>`;
 }
 function practiceCards(){
   if(!practice.length)return '';
