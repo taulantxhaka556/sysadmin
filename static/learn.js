@@ -155,9 +155,9 @@ function renderResults(result){
 }
 async function boot(){
   try{const data=await api();lessons=data.lessons;course=data.module;catalog=data.catalog;practice=data.practice;model=data.lab;examCount=data.exam_count;modelConfig=state.draft||{};setupCourse();if(moduleId===1&&state.draft)lab={...lab,devices:state.draft.devices,edges:state.draft.edges,live:state.lab};
-    $('#mode-banner').innerHTML=demo?'<span><b>Деморежим.</b> Все 14 модулей доступны для просмотра. Внутри модуля уроки последовательны. Демо не попадает в журнал и удаляется после 14 дней бездействия.</span><button id="reset-demo">Начать заново</button><a href="/login">Войти и сохранять прогресс →</a>':'<span>Учебный режим · Прогресс сохраняется в аккаунте и доступен преподавателю.</span><a href="/assignments">Отчёты для преподавателя →</a>';
+    $('#mode-banner').innerHTML=demo?'<span><b>Деморежим.</b> Все 14 модулей доступны для просмотра. Внутри модуля уроки последовательны. Демо не попадает в журнал и удаляется после 14 дней бездействия.</span><button id="reset-demo">Начать заново</button><a href="/login">Войти и сохранять прогресс →</a>':'<span>Все 14 модулей открыты — выбирайте любой и проходите в своём порядке. Прогресс каждого модуля сохраняется в аккаунте и доступен преподавателю.</span><a href="/assignments">Отчёты для преподавателя →</a>';
     if(demo)$('#reset-demo').onclick=()=>{if(confirm('Сбросить только прогресс этой демонстрации?'))act({action:'reset_demo'},()=>{lastReview=null;modelConfig={};lab={devices:{},edges:[],selected:'client',wireStart:null,live:false};navigate('home');});};
-    navigate(state.active_exam?'exam':(moduleId===1&&!state.completed.length&&!Object.keys(state.solved).length&&!Object.keys(state.attempts).length?'basics':'home'),false);
+    navigate(state.active_exam?'exam':(demo&&moduleId===1&&!state.completed.length&&!Object.keys(state.solved).length&&!Object.keys(state.attempts).length?'basics':'home'),false);
   }catch(error){$('#content').innerHTML=`<div class="error-box"><h2>Не удалось открыть модуль</h2><p>${esc(error.message)}</p><div class="actions"><button class="primary" id="retry-load">Повторить загрузку</button><a href="/login">Войти</a><a href="/learn/1/demo">Открыть демонстрацию</a></div></div>`;$('#retry-load').onclick=boot;}
 }
 boot();

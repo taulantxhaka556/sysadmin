@@ -76,9 +76,6 @@ def progress(r, demo, module_id=1):
             row.payload=json.dumps(states,ensure_ascii=False);row.updated=int(time.time())
         else:
             u = user(r, d)
-            states=account_states(d,u.id)
-            if u.role!='admin' and any(not passed(states.get(i,{})) for i in range(1,module_id)):
-                raise HTTPException(403,'Сначала пройдите предыдущие модули: практика и итоговый тест от 70/100')
             model=LearningProgress if module_id==1 else CourseProgress
             values=dict(user_id=u.id,payload='{}')
             if module_id!=1: values['module_id']=module_id
@@ -98,10 +95,9 @@ def catalog(r,demo):
         if demo:
             row=d.get(DemoProgress,r.session.get('course_demo',''))
             states={int(k):v for k,v in json.loads(row.payload).items()} if row else {}
-            preview=True
         else:
-            u=user(r,d);states=account_states(d,u.id);preview=u.role=='admin'
-        return [dict(id=i,title=m['title'],goal=m['goal'],theory=m['theory'],practice=m['practice'],passed=passed(states.get(i,{})),available=preview or all(passed(states.get(j,{})) for j in range(1,i))) for i,m in MODULES.items()]
+            u=user(r,d);states=account_states(d,u.id)
+        return [dict(id=i,title=m['title'],goal=m['goal'],theory=m['theory'],practice=m['practice'],passed=passed(states.get(i,{})),available=True) for i,m in MODULES.items()]
 
 
 def practical_tasks(r,demo,m):

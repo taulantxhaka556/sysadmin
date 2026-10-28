@@ -64,17 +64,19 @@ def test_models_compute_and_reject_bad_inputs():
         assert c.post('/api/learn/11?demo=true',json={'action':'simulate','config':config},headers={'X-CSRF-Token':token}).status_code==400
     assert c.get('/api/learn/99?demo=true').status_code==404
 
-def test_student_module_gate_and_teacher_preview():
+def test_existing_student_can_access_every_module_and_teacher_preview():
     with main.DB() as d:
         u=main.User(name='Course gate',email='gate@example.test',pw=main.hashed('Student12345'),role='student');d.add(u);d.commit();uid=u.id
     from test_platform import token
     c=TestClient(main.app)
     c.post('/login',data={'email':'gate@example.test','password':'Student12345','token':token(c)},follow_redirects=False)
-    assert c.get('/api/learn/2').status_code==403
+    data=c.get('/api/learn/14').json()
+    assert all(m['available'] for m in data['catalog'])
+    assert not any(m['passed'] for m in data['catalog'])
     with main.DB() as d:
         d.add(LearningProgress(user_id=uid,payload=json.dumps(initial()|dict(lab=True,best=70))));d.commit()
     assert c.get('/api/learn/2').status_code==200
-    assert c.get('/api/learn/3').status_code==403
+    assert c.get('/api/learn/3').status_code==200
     admin=teacher();data=admin.get('/api/learn/14').json()
     assert len(data['lessons'])==2
     assert len(data['practice'])==3

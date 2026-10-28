@@ -22,6 +22,20 @@ assert(html.includes('viewBox="0 0 640 240"'));assert(!html.includes('Алекс
 ctx.state.best=0;html=ctx.editorialHomeHTML();assert(html.includes('0/100'));
 ctx.state.passed=true;html=ctx.editorialHomeHTML();assert(html.includes('href="/learn/2"'));
 assert(!html.includes('href="/learn/3"'));
+ctx.state.passed=false;
+ctx.catalog.forEach(m=>{m.available=true;});
+html=ctx.editorialHomeHTML();
+for(const id of [1,2,3,4])assert(html.includes(`href="/learn/${id}"`));
+assert(!html.includes('aria-disabled="true"'));
+const controls=new Map();let selectedModule;
+ctx.$=selector=>{if(!controls.has(selector))controls.set(selector,{});return controls.get(selector);};
+ctx.$('#basics-nav');
+ctx.location={assign:url=>{selectedModule=url;}};
+vm.runInContext(ui.slice(ui.indexOf('function setupCourse('),ui.indexOf('function courseMap(')),ctx);
+ctx.setupCourse();
+assert(!ctx.$('#module-picker').innerHTML.includes('disabled'));
+ctx.$('#module-picker').onchange({target:{value:'4'}});
+assert.equal(selectedModule,'/learn/4');
 ctx.catalog[0].title='<script>alert(1)</script>';html=ctx.editorialHomeHTML();assert(!html.includes('<script>'));assert(html.includes('&lt;script&gt;'));
 ctx.moduleId=2;ctx.course={title:'Адреса и <сети>',goal:'Разбор'};html=ctx.editorialHomeHTML();
 assert(!html.includes('id="open-basics"'));assert(html.includes('Адреса и &lt;сети&gt;'));
@@ -33,4 +47,4 @@ for(const href of ['/assignments','/journal','/trainer','/exam'])assert(template
 for(const name of ['editorial.js','editorial.css','editorial-font.css'])assert(fs.statSync(path.join(root,name)).size>0);
 const css=fs.readFileSync(path.join(root,'editorial.css'),'utf8');
 assert(css.includes('repeat(4,minmax(0,1fr))'));assert(css.includes('@media(max-width:900px)'));assert(css.includes('@media(max-width:600px)'));assert(css.includes('prefers-reduced-motion'));
-console.log('Editorial rendering, real progress, module locks, escaping, navigation hooks and responsive rules verified');
+console.log('Editorial rendering, module links and picker, progress, escaping and responsive rules verified');
